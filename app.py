@@ -11,7 +11,7 @@ HTML_PAGE = """
     <title>Task Tracker</title>
 </head>
 <body>
-    <h1>Task Tracker App 🚀</h1>
+    <h1>Shivendra Tracker App 🚀</h1>
 
     <form method="POST" action="/add">
         <input type="text" name="task" placeholder="Enter task" required>
