@@ -2,10 +2,11 @@ from flask import Flask, request, redirect, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 import os
 
+
 app = Flask(__name__)
 
-# Read database URL from Azure Environment Variables
-database_url = os.getenv("DATABASE_URL")
+# Read database connection string from environment variable
+database_url = os.environ.get("DATABASE_URL")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -17,9 +18,15 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
 
-# HTML
+# Create Tables Automatically
+with app.app_context():
+    db.create_all()
+
+# HTML Page
 HTML_PAGE = """
+
 <!DOCTYPE html>
+
 <html>
 <head>
     <title>Task Tracker</title>
@@ -77,7 +84,4 @@ def delete_task(id):
 
 # Run App
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-
     app.run(debug=True)
