@@ -24,32 +24,94 @@ with app.app_context():
 
 # HTML Page
 HTML_PAGE = """
-
 <!DOCTYPE html>
-
 <html>
 <head>
     <title>Task Tracker</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
 
-<h1>Task Tracker App 🚀</h1>
+<body class="bg-light">
 
-<form method="POST" action="/add">
-    <input type="text" name="task" placeholder="Enter task" required>
-    <button type="submit">Add Task</button>
-</form>
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+            🚀 Task Tracker App
+        </span>
+    </div>
+</nav>
 
-<h2>Tasks:</h2>
+<div class="container mt-5">
 
-<ul>
+    <div class="card shadow">
+
+        <div class="card-header text-center">
+            <h2>🚀 Task Tracker</h2>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST" action="/add">
+
+                <div class="input-group mb-4">
+
+                    <input
+                        type="text"
+                        name="task"
+                        class="form-control"
+                        placeholder="Enter a task..."
+                        required>
+
+                    <button
+                        class="btn btn-primary"
+                        type="submit">
+                        Add Task
+                    </button>
+
+                </div>
+
+            </form>
+
+<h4>Your Tasks</h4>
+
+{% if tasks %}
+
 {% for task in tasks %}
-    <li>
-        {{ task.content }}
-        <a href="/delete/{{ task.id }}">Delete</a>
-    </li>
+
+<div class="card mb-2">
+
+    <div class="card-body d-flex justify-content-between">
+
+        <div>
+    <strong>{{ task.content }}</strong>
+</div>
+
+        <a
+            href="/delete/{{ task.id }}"
+            class="btn btn-danger btn-sm">
+            Delete
+        </a>
+
+    </div>
+
+</div>
+
 {% endfor %}
-</ul>
+
+{% else %}
+
+<div class="alert alert-info">
+    No tasks added yet.
+</div>
+
+{% endif %}
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>
