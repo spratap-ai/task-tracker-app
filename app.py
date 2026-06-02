@@ -49,6 +49,17 @@ def add_task():
 
     return redirect('/')
 
+@app.route('/complete/<int:id>')
+def complete_task(id):
+
+    task = Task.query.get_or_404(id)
+
+    task.status = "Completed"
+
+    db.session.commit()
+
+    return redirect('/')
+
 # Delete Task
 @app.route('/delete/<int:id>')
 def delete_task(id):
@@ -58,6 +69,22 @@ def delete_task(id):
 
     return redirect('/')
 
+#Edit Task
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit_task(id):
+
+    task = Task.query.get_or_404(id)
+
+    if request.method == 'POST':
+        task.content = request.form.get('task')
+        db.session.commit()
+
+        return redirect('/')
+
+    return render_template(
+        'edit.html',
+        task=task
+    )
 # Run App
 if __name__ == '__main__':
     app.run(debug=True)
