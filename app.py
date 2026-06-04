@@ -36,7 +36,16 @@ class Task(db.Model):
 @app.route('/')
 def home():
 
-    tasks = Task.query.order_by(
+    search = request.args.get('search')
+
+    query = Task.query
+
+    if search:
+        query = query.filter(
+            Task.content.ilike(f"%{search}%")
+        )
+
+    tasks = query.order_by(
         Task.due_date.asc()
     ).all()
 
