@@ -9,14 +9,78 @@
 
 <form method="POST">
 
+    <p>Task Name</p>
+
     <input
         type="text"
         name="task"
         value="{{ task.content }}"
         required>
 
+    <br><br>
+
+    <p>Due Date</p>
+
+    <input
+        type="date"
+        name="due_date"
+        value="{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '' }}">
+
+    <br><br>
+
+    <p>Priority</p>
+
+    <select name="priority">
+
+        <option value="High"
+            {% if task.priority == 'High' %}selected{% endif %}>
+            High
+        </option>
+
+        <option value="Medium"
+            {% if task.priority == 'Medium' %}selected{% endif %}>
+            Medium
+        </option>
+
+        <option value="Low"
+            {% if task.priority == 'Low' %}selected{% endif %}>
+            Low
+        </option>
+
+    </select>
+
+    <br><br>
+
+    <p>Category</p>
+
+    <select name="category">
+
+        <option value="Work"
+            {% if task.category == 'Work' %}selected{% endif %}>
+            Work
+        </option>
+
+        <option value="Personal"
+            {% if task.category == 'Personal' %}selected{% endif %}>
+            Personal
+        </option>
+
+        <option value="Learning"
+            {% if task.category == 'Learning' %}selected{% endif %}>
+            Learning
+        </option>
+
+        <option value="Finance"
+            {% if task.category == 'Finance' %}selected{% endif %}>
+            Finance
+        </option>
+
+    </select>
+
+    <br><br>
+
     <button type="submit">
-        Save
+        Save Changes
     </button>
 
 </form>

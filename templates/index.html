@@ -96,7 +96,7 @@
 
   <div class="row mb-4">
 
-    <div class="col-md-8">
+    <div class="col-md-5">
         <input
             type="text"
             name="task"
@@ -113,18 +113,31 @@
     </div>
 
     <div class="col-md-2">
+
     <select
-    name="priority"
-    class="form-select">
+        name="priority"
+        class="form-select mb-2">
 
-    <option value="High">High</option>
-    <option value="Medium" selected>Medium</option>
-    <option value="Low">Low</option>
+        <option value="High">High</option>
+        <option value="Medium" selected>Medium</option>
+        <option value="Low">Low</option>
 
-</select>
+    </select>
+
+    <select
+        name="category"
+        class="form-select">
+
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+        <option value="Learning">Learning</option>
+        <option value="Finance">Finance</option>
+
+    </select>
+
 </div>
 
-    <div class="col-md-2">
+    <div class="col-md-3">
         <button
             class="btn btn-primary w-100"
             type="submit">
@@ -143,7 +156,7 @@
 
     <div class="row mb-3">
 
-        <div class="col-md-6">
+        <div class="col-md-4">
 
             <input
                 type="text"
@@ -154,44 +167,52 @@
 
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-2">
 
-             <select
-               name="priority_filter"
-               class="form-select">
+    <select
+        name="priority_filter"
+        class="form-select">
 
-               <option value=""
-                   {% if not request.args.get('priority_filter') %}
-                       selected
-                   {% endif %}>
-                   All Priorities
-                </option>
+        <option value="">All Priorities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
 
-                <option value="High"
-                    {% if request.args.get('priority_filter') == 'High' %}
-                        selected
-                    {% endif %}>
-                    High
-                </option>
+    </select>
 
-                <option value="Medium"
-                    {% if request.args.get('priority_filter') == 'Medium' %}
-                        selected
-                    {% endif %}>
-                    Medium
-                </option>
+</div>
 
-                <option value="Low"
-                    {% if request.args.get('priority_filter') == 'Low' %}
-                        selected
-                    {% endif %}>
-                    Low
-                </option>
+<div class="col-md-2">
 
-            </select>
+    <select
+        name="status_filter"
+        class="form-select">
 
-        </div>
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Completed">Completed</option>
 
+    </select>
+
+</div>
+
+<div class="col-md-2">
+
+    <select
+        name="category_filter"
+        class="form-select">
+
+        <option value="">All Categories</option>
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+        <option value="Learning">Learning</option>
+        <option value="Finance">Finance</option>
+
+    </select>
+
+</div>
+
+               
         <div class="col-md-2">
 
             <button
@@ -241,6 +262,9 @@
                 </span>
 
                 {% endif %}
+                <span class="badge bg-info text-dark">
+                    {{ task.category }}
+                </span>
 
                 {% if task.due_date %}
                 <small class="text-muted d-block">

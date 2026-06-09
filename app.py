@@ -36,6 +36,7 @@ class Task(db.Model):
     status = db.Column(db.String(20), default="Pending")
     due_date = db.Column(db.Date, nullable=True)
     priority = db.Column(db.String(20), default="Medium")
+    category = db.Column(db.String(50), default="Work")
 
 
 
@@ -45,6 +46,8 @@ def home():
 
     search = request.args.get('search')
     priority_filter = request.args.get('priority_filter')
+    status_filter = request.args.get('status_filter')
+    category_filter = request.args.get('category_filter')
 
     query = Task.query
 
@@ -57,6 +60,14 @@ def home():
         query = query.filter(
             Task.priority == priority_filter
         )
+    if status_filter:
+        query = query.filter(
+            Task.status == status_filter
+        )
+    if category_filter:
+        query = query.filter(
+        Task.category == category_filter
+        )   
 
     tasks = query.order_by(
         Task.due_date.asc()
@@ -88,6 +99,7 @@ def add_task():
     task_content = request.form.get('task')
     due_date = request.form.get('due_date')
     priority = request.form.get('priority')
+    category = request.form.get('category')
 
     if task_content:
         new_task = Task(
@@ -96,8 +108,9 @@ def add_task():
         due_date,
         "%Y-%m-%d"
     ).date() if due_date else None,
-    priority=priority
-)
+    priority=priority,
+    category=category
+    ) 
         db.session.add(new_task)
         db.session.commit()
         app.logger.info(
@@ -139,8 +152,25 @@ def edit_task(id):
     task = Task.query.get_or_404(id)
 
     if request.method == 'POST':
+
         task.content = request.form.get('task')
+
+        due_date = request.form.get('due_date')
+
+        task.due_date = (
+            datetime.strptime(
+                due_date,
+                "%Y-%m-%d"
+            ).date()
+            if due_date else None
+        )
+
+        task.priority = request.form.get('priority')
+
+        task.category = request.form.get('category')
+
         db.session.commit()
+
         app.logger.info(
             f"Task updated: {task.content}"
        )
