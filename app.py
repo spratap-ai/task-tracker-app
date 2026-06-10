@@ -3,6 +3,7 @@ from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+from flask_login import UserMixin
 import os
 import logging
 
@@ -38,7 +39,25 @@ class Task(db.Model):
     priority = db.Column(db.String(20), default="Medium")
     category = db.Column(db.String(50), default="Work")
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
 
+    username = db.Column(
+        db.String(100),
+        unique=True,
+        nullable=False
+    )
+
+    email = db.Column(
+        db.String(120),
+        unique=True,
+        nullable=False
+    )
+
+    password_hash = db.Column(
+        db.String(255),
+        nullable=False
+    )
 
 # Home Page
 @app.route('/')
@@ -177,10 +196,10 @@ def edit_task(id):
 
         return redirect('/')
 
-    return render_template(
+        return render_template(
         'edit.html',
         task=task
-    )
+       )
 # Run App
 if __name__ == '__main__':
     app.run(debug=True)
