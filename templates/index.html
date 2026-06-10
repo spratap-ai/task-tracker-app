@@ -10,9 +10,24 @@
 
 <nav class="navbar navbar-dark bg-dark shadow-sm">
     <div class="container">
+
         <span class="navbar-brand mb-0 h1">
             🚀 Task Tracker Pro
         </span>
+
+        <div>
+
+            <span class="text-white me-3">
+                Welcome, {{ current_user.username }}
+            </span>
+
+            <a href="/logout"
+               class="btn btn-outline-light btn-sm">
+                Logout
+            </a>
+
+        </div>
+
     </div>
 </nav>
 
@@ -49,6 +64,85 @@
 
     </div>
 
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card text-center shadow border-danger">
+                <div class="card-body">
+                    <h6>🔥 High Priority</h6>
+                    <h3>{{ high_priority_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow border-warning">
+                <div class="card-body">
+                    <h6>⏰ Due Today</h6>
+                    <h3>{{ due_today_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow border-dark">
+                <div class="card-body">
+                    <h6>🚨 Overdue</h6>
+                    <h3>{{ overdue_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow border-success">
+                <div class="card-body">
+                    <h6>📈 Completion Rate</h6>
+                    <h3>{{ completion_rate }}%</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card text-center shadow">
+                <div class="card-body">
+                    <h6>Work</h6>
+                    <h3>{{ work_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow">
+                <div class="card-body">
+                    <h6>Personal</h6>
+                    <h3>{{ personal_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow">
+                <div class="card-body">
+                    <h6>Learning</h6>
+                    <h3>{{ learning_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center shadow">
+                <div class="card-body">
+                    <h6>Finance</h6>
+                    <h3>{{ finance_tasks }}</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
     <div class="card shadow mb-4">
 
         <div class="card-body">
