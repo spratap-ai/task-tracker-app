@@ -11,13 +11,15 @@ from flask_login import (
     UserMixin,
     current_user
 )
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, flash
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_login import UserMixin
+from sqlalchemy import case
+from flask_wtf.csrf import CSRFProtect
 import os
 import logging
 
@@ -27,6 +29,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get(
     "SECRET_KEY"
 )
+csrf = CSRFProtect(app)
 app.logger.setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.INFO,
@@ -49,6 +52,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 login_manager.login_view = "login"
+login_manager.login_message = None
 
 # Database Tables
 
@@ -87,8 +91,30 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        if len(password) < 8:
+
+            flash(
+                  "Password must be at least 8 characters long",
+                  "danger"
+            )
+
+            return redirect('/register')
 
         hashed_password = generate_password_hash(password)
+        
+        existing_user = User.query.filter(
+            (User.email == email) |
+            (User.username == username)
+        ).first()
+
+        if existing_user:
+
+            flash(
+                "Username or email already exists",
+                "danger"
+            )
+
+            return redirect('/register')
 
         new_user = User(
             username=username,
@@ -125,12 +151,12 @@ def login():
 
             return redirect('/')
 
-        return "Invalid Credentials"
+        flash("Invalid email or password", "danger")
+        return redirect('/login')
 
     return render_template(
         'login.html'
- 
-   )
+    )
 
 @app.route('/logout')
 @login_required
@@ -139,6 +165,79 @@ def logout():
     logout_user()
 
     return redirect('/login')
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+
+    if request.method == 'POST':
+
+        current_password = request.form.get(
+            'current_password'
+        )
+
+        new_password = request.form.get(
+            'new_password'
+        )
+
+        if not check_password_hash(
+            current_user.password_hash,
+            current_password
+        ):
+
+            return "Current password is incorrect"
+
+        current_user.password_hash = (
+            generate_password_hash(
+                new_password
+            )
+        )
+
+        db.session.commit()
+
+        logout_user()
+
+        flash(
+            "Password changed successfully. Please log in again.",
+            "success"
+       )
+
+        return redirect('/login')
+    
+    return render_template(
+        'change_password.html'
+    )
+@app.route('/profile')
+@login_required
+def profile():
+
+    tasks = Task.query.filter_by(
+        user_id=current_user.id
+    ).all()
+
+    total_tasks = len(tasks)
+
+    completed_tasks = len(
+        [
+            task for task in tasks
+            if task.status == "Completed"
+        ]
+    )
+
+    completion_rate = (
+        round(
+            completed_tasks / total_tasks * 100
+        )
+        if total_tasks > 0
+        else 0
+    )
+
+    return render_template(
+        "profile.html",
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion_rate=completion_rate
+    )
 
 # Home Page
 @app.route('/')
@@ -149,9 +248,15 @@ def home():
     priority_filter = request.args.get('priority_filter')
     status_filter = request.args.get('status_filter')
     category_filter = request.args.get('category_filter')
+    sort_by = request.args.get('sort_by')
+    page = request.args.get(
+        'page',
+        1,
+        type=int
+    )
 
     query = Task.query.filter_by(
-    user_id=current_user.id
+        user_id=current_user.id
     )
 
     if search:
@@ -163,98 +268,140 @@ def home():
         query = query.filter(
             Task.priority == priority_filter
         )
+
     if status_filter:
         query = query.filter(
             Task.status == status_filter
         )
+
     if category_filter:
         query = query.filter(
-        Task.category == category_filter
-        )   
+            Task.category == category_filter
+        )
 
-    tasks = query.order_by(
-        Task.due_date.asc()
-    ).all()
+    # Sorting
+    if sort_by == "due_date":
 
-    total_tasks = len(tasks)
+        query = query.order_by(
+            Task.due_date.asc()
+        )
 
-    pending_tasks = len(
-        [task for task in tasks if task.status == "Pending"]
+    elif sort_by == "priority":
+
+        query = query.order_by(
+            case(
+                (Task.priority == "High", 1),
+                (Task.priority == "Medium", 2),
+                (Task.priority == "Low", 3)
+            )
+       )
+
+    elif sort_by == "newest":
+
+        query = query.order_by(
+            Task.created_at.desc()
+        )
+
+    elif sort_by == "oldest":
+
+        query = query.order_by(
+            Task.created_at.asc()
+        )
+
+    else:
+
+        query = query.order_by(
+            Task.due_date.asc()
+        )
+
+    pagination = query.paginate(
+        page=page,
+        per_page=10,
+        error_out=False
     )
 
+    all_tasks = query.all()
+
+    tasks = pagination.items
+
+    total_tasks = len(all_tasks)
+
+    pending_tasks = len(
+    [task for task in all_tasks if task.status == "Pending"]
+   )
+
     completed_tasks = len(
-        [task for task in tasks if task.status == "Completed"]
+    [task for task in all_tasks if task.status == "Completed"]
     )
 
     work_tasks = len(
-    [task for task in tasks if task.category == "Work"]
-    )
+    [task for task in all_tasks if task.category == "Work"]
+   )
 
     personal_tasks = len(
-    [task for task in tasks if task.category == "Personal"]
-    )
+    [task for task in all_tasks if task.category == "Personal"]
+   )
 
     learning_tasks = len(
-    [task for task in tasks if task.category == "Learning"]
-    )
+    [task for task in all_tasks if task.category == "Learning"]
+   )
 
     finance_tasks = len(
-    [task for task in tasks if task.category == "Finance"]
+    [task for task in all_tasks if task.category == "Finance"]
     )
 
     today = date.today()
 
     high_priority_tasks = len(
-    [
-        task for task in tasks
-        if task.priority == "High"
-    ]
+        [
+            task for task in all_tasks
+            if task.priority == "High"
+            and task.status != "Completed"
+        ]
     )
 
     overdue_tasks = len(
-    [
-        task for task in tasks
-        if task.due_date
-        and task.due_date < today
-        and task.status != "Completed"
-    ]
+        [
+            task for task in all_tasks
+            if task.due_date
+            and task.due_date < today
+            and task.status != "Completed"
+        ]
     )
 
     due_today_tasks = len(
-    [
-        task for task in tasks
-        if task.due_date == today
-        and task.status != "Completed"
-    ]
-   )
+        [
+            task for task in all_tasks
+            if task.due_date == today
+            and task.status != "Completed"
+        ]
+    )
 
     completion_rate = (
-    round(
-        completed_tasks / total_tasks * 100
+        round(
+            completed_tasks / total_tasks * 100
+        )
+        if total_tasks > 0
+        else 0
     )
-    if total_tasks > 0
-    else 0
-   )
 
     return render_template(
-    "index.html",
-    tasks=tasks,
-    total_tasks=total_tasks,
-    pending_tasks=pending_tasks,
-    completed_tasks=completed_tasks,
-    work_tasks=work_tasks,
-    personal_tasks=personal_tasks,
-    learning_tasks=learning_tasks,
-    finance_tasks=finance_tasks,
-
-    high_priority_tasks=high_priority_tasks,
-    overdue_tasks=overdue_tasks,
-    due_today_tasks=due_today_tasks,
-    completion_rate=completion_rate,
-
-    today=today
-      
-  )
+        "index.html",
+        tasks=tasks,
+        total_tasks=total_tasks,
+        pending_tasks=pending_tasks,
+        completed_tasks=completed_tasks,
+        work_tasks=work_tasks,
+        personal_tasks=personal_tasks,
+        learning_tasks=learning_tasks,
+        finance_tasks=finance_tasks,
+        high_priority_tasks=high_priority_tasks,
+        overdue_tasks=overdue_tasks,
+        due_today_tasks=due_today_tasks,
+        completion_rate=completion_rate,
+        pagination=pagination,
+        today=today
+    )
 # Add Task
 @app.route('/add', methods=['POST'])
 @login_required
@@ -277,6 +424,10 @@ def add_task():
     ) 
         db.session.add(new_task)
         db.session.commit()
+        flash(
+            "Task created successfully!",
+            "success"
+        )
         app.logger.info(
             f"Task created: {task_content}"
    )
@@ -287,11 +438,18 @@ def add_task():
 @login_required
 def complete_task(id):
 
-    task = Task.query.get_or_404(id)
+    task = Task.query.filter_by(
+        id=id,
+        user_id=current_user.id
+    ).first_or_404()
 
     task.status = "Completed"
 
     db.session.commit()
+    flash(
+        "Task marked as completed!",
+        "success"
+    )
     app.logger.info(
         f"Task completed: {task.content}"
     )
@@ -302,12 +460,20 @@ def complete_task(id):
 @app.route('/delete/<int:id>')
 @login_required
 def delete_task(id):
-    task = Task.query.get_or_404(id)
+    task = Task.query.filter_by(
+        id=id,
+        user_id=current_user.id
+    ).first_or_404()
     app.logger.info(
         f"Task deleted: {task.content}"
     )
     db.session.delete(task)
     db.session.commit()
+
+    flash(
+    "Task deleted successfully",
+    "danger"
+    ) 
 
     return redirect('/')
 
@@ -316,7 +482,10 @@ def delete_task(id):
 @login_required
 def edit_task(id):
 
-    task = Task.query.get_or_404(id)
+    task = Task.query.filter_by(
+        id=id,
+        user_id=current_user.id
+    ).first_or_404()
 
     if request.method == 'POST':
 
@@ -337,6 +506,10 @@ def edit_task(id):
         task.category = request.form.get('category')
 
         db.session.commit()
+        flash(
+           "Task updated successfully",
+           "info"
+        )
 
         app.logger.info(
             f"Task updated: {task.content}"
