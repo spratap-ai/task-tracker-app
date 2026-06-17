@@ -12,12 +12,10 @@ from flask_login import (
     current_user
 )
 from flask import Flask, request, redirect, render_template, flash
-from werkzeug.security import generate_password_hash
-from datetime import datetime, date
+from datetime import datetime, date, UTC
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from flask_migrate import Migrate
-from flask_login import UserMixin
 from sqlalchemy import case
 from flask_wtf.csrf import CSRFProtect
 import os
@@ -41,6 +39,8 @@ database_url = os.environ.get("DATABASE_URL")
 
 if not database_url:
     raise ValueError("DATABASE_URL environment variable is not set")
+# Allow test environment to override database URL
+database_url = os.environ.get("TEST_DATABASE_URL", database_url) if os.environ.get("PYTEST_RUNNING") else database_url
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -64,14 +64,15 @@ class User(UserMixin, db.Model):
 @login_manager.user_loader
 def load_user(user_id):
 
-    return User.query.get(
+    return db.session.get(
+        User,
         int(user_id)
     )
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     status = db.Column(db.String(20), default="Pending")
     due_date = db.Column(db.Date, nullable=True)
     priority = db.Column(db.String(20), default="Medium")
@@ -179,6 +180,13 @@ def change_password():
         new_password = request.form.get(
             'new_password'
         )
+
+        if len(new_password) < 8:
+            flash(
+                  "Password must be at least 8 characters long",
+                  "danger"
+            )
+            return redirect('/change-password')
 
         if not check_password_hash(
             current_user.password_hash,
@@ -521,6 +529,16 @@ def edit_task(id):
         'edit.html',
         task=task
     )
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('500.html'), 500
 # Run App
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(
+        debug=os.getenv("FLASK_ENV") == "development"
+    )

@@ -214,6 +214,7 @@
         <div class="card-body">
 
             <form method="POST" action="/add">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
   <div class="row mb-4">
 
