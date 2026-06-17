@@ -35,12 +35,13 @@ logging.basicConfig(
 )
 
 # Read database connection string from environment variable
-database_url = os.environ.get("DATABASE_URL")
+if os.environ.get("PYTEST_RUNNING"):
+    database_url = os.environ.get("TEST_DATABASE_URL")
+else:
+    database_url = os.environ.get("DATABASE_URL")
 
 if not database_url:
-    raise ValueError("DATABASE_URL environment variable is not set")
-# Allow test environment to override database URL
-database_url = os.environ.get("TEST_DATABASE_URL", database_url) if os.environ.get("PYTEST_RUNNING") else database_url
+    raise ValueError("Database URL is not set")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
